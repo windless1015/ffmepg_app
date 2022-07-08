@@ -15,8 +15,9 @@ SET(CMAKE_AUTORCC ON)
 SET(CMAKE_AUTOUIC ON)
 SET(CMAKE_AUTOUIC_SEARCH_PATHS src/ui)
 
-FIND_PACKAGE(Qt5 COMPONENTS Core Widgets Gui Multimedia MultimediaWidgets REQUIRED)
+#FIND_PACKAGE(Qt5 COMPONENTS Core Widgets Gui Multimedia MultimediaWidgets REQUIRED)
 
+FIND_PACKAGE(Qt5 COMPONENTS Core Gui REQUIRED)
 SET(FFMPEG_LIB_DIRS 
 	D:/projects/ffmpeg/ffmpeg-shared)
 #SET(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} FFmpeg)
@@ -26,22 +27,27 @@ SET(AVFORMAT_LIBRARY ${FFMPEG_LIB_DIRS}/lib/avformat.lib)
 SET(AVUTIL_LIBRARY  ${FFMPEG_LIB_DIRS}/lib/avutil.lib)
 SET(AVDEVICE_LIBRARY  ${FFMPEG_LIB_DIRS}/lib/avdevice.lib)
 
+
+#opencv
+SET(OPENCV_DIR 
+	D:/projects/ultras/libs_Make/ThirdPartyLibs/OpenCVInstall/include
+)
+
+SET(OPENCV_LIB_DIR 
+	D:/projects/ultras/libs_Make/ThirdPartyLibs/OpenCVInstall/x64/vc14/lib
+)
+SET(HIGHGUI_LIBRARY  ${OPENCV_LIB_DIR}/opencv_highgui420d.lib)
+
+
 #group source files, header files, resource files and ui files
 SET(FFMPEGAPP_SRCS
 	main.cpp
-	src/camera.cpp
 )
 
 SET(FFMPEGAPP_HDRS
-	src/camera.h
+
 )
 
-SET(UI_FILES
-	src/ui/camera.ui
-)
-SET(QRC_SOURCE_FILES 
-	src/ui/camera.qrc
-)
 
 #add the resource files into qt project
 QT5_ADD_RESOURCES(QRC_FILES ${QRC_SOURCE_FILES})
@@ -51,13 +57,13 @@ QT5_ADD_RESOURCES(QRC_FILES ${QRC_SOURCE_FILES})
 ADD_EXECUTABLE( ${CMAKE_PROJECT_NAME}
   ${FFMPEGAPP_SRCS}
   ${FFMPEGAPP_HDRS}
-  #${QRC_FILES}
-  ${UI_FILES}
+
 )
 
 include_directories(${CMAKE_PROJECT_NAME} 
 	${FFMPEG_LIB_DIRS}/include
 	${CMAKE_CURRENT_SOURCE_DIR}
+	${OPENCV_DIR}
 )
 
 target_link_libraries(${CMAKE_PROJECT_NAME} 
@@ -66,9 +72,21 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
 	${AVUTIL_LIBRARY} 
 	${AVDEVICE_LIBRARY}
 	Qt5::Core
-	Qt5::Widgets  
 	Qt5::Gui
-	Qt5::Multimedia
-	Qt5::MultimediaWidgets
+	#${HIGHGUI_LIBRARY}
+	
+	debug ${OPENCV_LIB_DIR}/opencv_highgui420d.lib
+	optimized ${OPENCV_LIB_DIR}/opencv_highgui420.lib
+	
+	debug ${OPENCV_LIB_DIR}/opencv_core420d.lib
+	optimized ${OPENCV_LIB_DIR}/opencv_core420.lib   
+	
+	debug ${OPENCV_LIB_DIR}/opencv_videoio420d.lib
+	optimized ${OPENCV_LIB_DIR}/opencv_videoio420.lib
+	
+	debug ${OPENCV_LIB_DIR}/opencv_imgproc420d.lib
+	optimized ${OPENCV_LIB_DIR}/opencv_imgproc420.lib
+
 )
 message(STATUS "${AVDEVICE_LIBRARY}")
+message(STATUS "${HIGHGUI_LIBRARY}")
