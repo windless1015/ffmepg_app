@@ -19,7 +19,7 @@ SET(CMAKE_AUTOUIC_SEARCH_PATHS src/ui)
 
 FIND_PACKAGE(Qt5 COMPONENTS Core Gui REQUIRED)
 SET(FFMPEG_LIB_DIRS 
-	D:/projects/ffmpeg/ffmpeg-shared)
+	D:/Librarys/ffmpeg/ffmpeg)
 #SET(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} FFmpeg)
 
 SET(AVCODEC_LIBRARY ${FFMPEG_LIB_DIRS}/lib/avcodec.lib)
@@ -42,6 +42,7 @@ SET(HIGHGUI_LIBRARY  ${OPENCV_LIB_DIR}/opencv_highgui420d.lib)
 #group source files, header files, resource files and ui files
 SET(FFMPEGAPP_SRCS
 	main.cpp
+	src/encode_video.c
 )
 
 SET(FFMPEGAPP_HDRS

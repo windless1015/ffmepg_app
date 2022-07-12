@@ -45,7 +45,9 @@ QImage MatToQImage(const cv::Mat& mat)
 	}
 }
 
-
+/*
+https://ffmpeg.org/doxygen/trunk/encode_video_8c-example.html
+*/
 
 
 int main(int argc, char** argv)
