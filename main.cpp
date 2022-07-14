@@ -117,7 +117,7 @@ https://ffmpeg.org/doxygen/trunk/encode_video_8c-example.html
 
 
 
-int main(int argc, char *argv[])
+int main_t(int argc, char *argv[])
 {
 	/*if (argc < 2) {
 		std::cout << "Usage:" << std::endl;
@@ -134,11 +134,11 @@ int main(int argc, char *argv[])
 	int ret;
 
 	// Output video size
-	const int output_w = 1280;
-	const int output_h = 720;
+	const int output_w = 1432;
+	const int output_h = 730;
 	// Output video FPS
-	const AVRational dst_fps = { 24, 1 };
-	const int64_t bit_rate = 0;
+	const AVRational dst_fps = { 30, 1 };
+	const int64_t bit_rate = 400000;
 
 	// Open webcam
 	cv::VideoCapture video_capture(0);
@@ -182,7 +182,16 @@ int main(int argc, char *argv[])
 	codec_context->bit_rate = bit_rate;
 	codec_context->width = output_w;
 	codec_context->height = output_h;
-	codec_context->time_base = av_inv_q(dst_fps);
+	//codec_context->time_base = av_inv_q(dst_fps);
+
+	AVRational tbs = { 1, 30 };
+	codec_context->time_base = tbs;
+	AVRational fr = { 30,1 };
+	codec_context->framerate = fr;
+	codec_context->gop_size = 10;
+	codec_context->max_b_frames = 1;
+
+
 	codec_context->pix_fmt = AV_PIX_FMT_YUV420P; // H.264 should be planar YUV 4:2:0 chroma sampling
 	if (format_context->oformat->flags & AVFMT_GLOBALHEADER)
 		codec_context->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
@@ -277,8 +286,9 @@ int main(int argc, char *argv[])
 			std::cerr << "Error encoding frame" << std::endl;
 			break;
 		}
-		while (ret >= 0) {
-			// Receive packet
+		while (ret >= 0) 
+		{
+			// Receive packetA
 			ret = avcodec_receive_packet(codec_context, &packet);
 			if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
 				break;
@@ -287,14 +297,21 @@ int main(int argc, char *argv[])
 				break;
 			}
 			// Set stream index
-			packet.stream_index = 0;
+			//packet.stream_index = 0;
+			packet.stream_index = video_stream->id;
 			// Rescale timestamp in a packet
 			av_packet_rescale_ts(&packet, codec_context->time_base, video_stream->time_base);
 			// Write packet to FormatContext
-			av_write_frame(format_context, &packet);
+			//av_write_frame(format_context, &packet); // another api is av_interleaved_write_frame
+			ret = av_interleaved_write_frame(format_context, &packet);
+			if (ret < 0) {
+				std::cerr << "av_interleaved_write_frame error" << std::endl;
+				break;
+			}
 			std::cout << encoded_frames << '\r' << std::flush;  // dump progress
 			encoded_frames++;
 			av_packet_unref(&packet);
+
 		}
 
 	} while (!is_flushing);
@@ -308,6 +325,7 @@ int main(int argc, char *argv[])
 	avio_close(format_context->pb);
 	avformat_free_context(format_context);
 
+	system("pause");
 	return 0;
 }
 

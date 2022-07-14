@@ -1,40 +1,28 @@
-/*
-* Copyright (c) 2001 Fabrice Bellard
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy
-* of this software and associated documentation files (the "Software"), to deal
-* in the Software without restriction, including without limitation the rights
-* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the Software is
-* furnished to do so, subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in
-* all copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-* THE SOFTWARE.
-*/
+//#include <stdio.h>
+//#include <stdlib.h>
+//#include <string.h>
+//
 
-/**
-* @file
-* video encoding with libavcodec API example
-*
-* @example encode_video.c
-*/
+//
+//
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
-#include <libavcodec/avcodec.h>
+#include <stdio.h> 
+#include <iostream>
+extern "C" {
+#include "libavcodec/avcodec.h";
+#include "libavformat/avformat.h"
+#include "libswscale/swscale.h"
+#include "libavdevice/avdevice.h"
+#include "libavfilter/buffersink.h"
+#include "libavutil/pixdesc.h"
+#include "libavutil/imgutils.h"
+}
 
-#include <libavutil/opt.h>
-#include <libavutil/imgutils.h>
+#include <opencv2/core.hpp>
+#include <opencv2/videoio.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
 
 static void encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt,
 	FILE *outfile)
@@ -43,7 +31,7 @@ static void encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt,
 
 	/* send the frame to the encoder */
 	if (frame)
-		printf("Send frame %3"PRId64"\n", frame->pts);
+		printf("Send frame %ld\n", frame->pts);
 
 	ret = avcodec_send_frame(enc_ctx, frame);
 	if (ret < 0) {
@@ -60,7 +48,7 @@ static void encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt,
 			exit(1);
 		}
 
-		printf("Write packet %3"PRId64" (size=%5d)\n", pkt->pts, pkt->size);
+		printf("Write packet %ld, size=%5d)\n", pkt->pts, pkt->size);
 		fwrite(pkt->data, 1, pkt->size, outfile);
 		av_packet_unref(pkt);
 	}
@@ -68,6 +56,9 @@ static void encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt,
 
 int main_test(int argc, char **argv)
 {
+	const int output_w = 1432;
+	const int output_h = 730;
+
 	const char *filename, *codec_name;
 	const AVCodec *codec;
 	AVCodecContext *c = NULL;
@@ -77,15 +68,19 @@ int main_test(int argc, char **argv)
 	AVPacket *pkt;
 	uint8_t endcode[] = { 0, 0, 1, 0xb7 };
 
-	if (argc <= 2) {
+	/*if (argc <= 2) {
 		fprintf(stderr, "Usage: %s <output file> <codec name>\n", argv[0]);
 		exit(0);
 	}
 	filename = argv[1];
-	codec_name = argv[2];
+	codec_name = argv[2];*/
+
+	filename = "D:/official_encodeExample.mp4";
 
 	/* find the mpeg1video encoder */
-	codec = avcodec_find_encoder_by_name(codec_name);
+	//codec = avcodec_find_encoder_by_name(codec_name);
+
+	codec = avcodec_find_encoder(AV_CODEC_ID_H264);
 	if (!codec) {
 		fprintf(stderr, "Codec '%s' not found\n", codec_name);
 		exit(1);
@@ -101,14 +96,16 @@ int main_test(int argc, char **argv)
 	if (!pkt)
 		exit(1);
 
-	/* put sample parameters */
-	c->bit_rate = 400000;
+	/* put sample parameters */  // reference: https://blog.csdn.net/benkaoya/article/details/79558896
+	c->bit_rate = 4000000; //4Mbps
 	/* resolution must be a multiple of two */
-	c->width = 352;
-	c->height = 288;
+	c->width = output_w;
+	c->height = output_h;
 	/* frames per second */
-	c->time_base = (AVRational) { 1, 25 };
-	c->framerate = (AVRational) { 25, 1 };
+	AVRational tbs = {1, 30 };
+	AVRational fr = { 30,1 };
+	c->time_base = tbs;
+	c->framerate = fr;
 
 	/* emit one intra frame every ten frames
 	* check frame pict_type before passing frame
@@ -125,8 +122,11 @@ int main_test(int argc, char **argv)
 
 	/* open it */
 	ret = avcodec_open2(c, codec, NULL);
-	if (ret < 0) {
-		fprintf(stderr, "Could not open codec: %s\n", av_err2str(ret));
+	if (ret < 0) 
+	{
+		char errBuf[1024];
+		char* errStr = av_make_error_string(errBuf, AV_ERROR_MAX_STRING_SIZE, ret);
+		fprintf(stderr, "Could not open codec: %s\n", errStr);
 		exit(1);
 	}
 
@@ -151,10 +151,36 @@ int main_test(int argc, char **argv)
 		exit(1);
 	}
 
-	/* encode 1 second of video */
-	for (i = 0; i < 25; i++) 
+
+
+
+
+	// Open webcam
+	cv::VideoCapture video_capture(0);
+	if (!video_capture.isOpened()) {
+		std::cout << "Failed to open VideoCapture." << std::endl;
+		return 2;
+	}
+	video_capture.set(cv::CAP_PROP_FRAME_WIDTH, output_w);
+	video_capture.set(cv::CAP_PROP_FRAME_HEIGHT, output_h);
+	// Allocate cv::Mat with extra bytes (required by AVFrame::data)
+	std::vector<uint8_t> imgbuf(output_h * output_w * 4 + 16);
+	cv::Mat image(output_h, output_w, CV_8UC4, imgbuf.data(), output_w * 4);
+
+	/* encode video */
+	bool is_flushing = false;
+	for(;;)
 	{
 		fflush(stdout);
+
+		if (!is_flushing) 
+		{
+			// Read video capture image
+			video_capture >> image;
+			cv::imshow("press ESC to exit", image);
+			if (cv::waitKey(33) == 0x1b)
+				is_flushing = true;
+		}
 
 		/* Make sure the frame data is writable.
 		On the first round, the frame is fresh from av_frame_get_buffer()
@@ -175,23 +201,14 @@ int main_test(int argc, char **argv)
 		filling the frame. FFmpeg does not care what you put in the
 		frame.
 		*/
-		/* Y */
-		for (y = 0; y < c->height; y++) {
-			for (x = 0; x < c->width; x++) {
-				frame->data[0][y * frame->linesize[0] + x] = x + y + i * 3;
-			}
+		if (!is_flushing) 
+		{
+			//const int stride[] = { static_cast<int>(image.step[0]) };
+			//sws_scale(sws_context, &image.data, stride, 0, image.rows, frame->data, frame->linesize);
+			//frame->pts = frame_pts++; // Set presentation timestamp
+
+			frame->pts = i;
 		}
-
-		/* Cb and Cr */
-		for (y = 0; y < c->height / 2; y++) {
-			for (x = 0; x < c->width / 2; x++) {
-				frame->data[1][y * frame->linesize[1] + x] = 128 + y + i * 2;
-				frame->data[2][y * frame->linesize[2] + x] = 64 + x + i * 5;
-			}
-		}
-
-		frame->pts = i;
-
 		/* encode the image */
 		encode(c, frame, pkt, f);
 	}
@@ -205,7 +222,7 @@ int main_test(int argc, char **argv)
 	codecs. To create a valid file, you usually need to write packets
 	into a proper file format or protocol; see muxing.c.
 	*/
-	if (codec->id == AV_CODEC_ID_MPEG1VIDEO || codec->id == AV_CODEC_ID_MPEG2VIDEO)
+	if (codec->id == AV_CODEC_ID_H264)
 		fwrite(endcode, 1, sizeof(endcode), f);
 	fclose(f);
 
