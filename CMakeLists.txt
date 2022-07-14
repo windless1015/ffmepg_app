@@ -42,6 +42,7 @@ SET(HIGHGUI_LIBRARY  ${OPENCV_LIB_DIR}/opencv_highgui420d.lib)
 #group source files, header files, resource files and ui files
 SET(FFMPEGAPP_SRCS
 	main.cpp
+	src/encode_video.c
 )
 
 SET(FFMPEGAPP_HDRS

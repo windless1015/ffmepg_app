@@ -66,7 +66,7 @@ static void encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt,
 	}
 }
 
-int main(int argc, char **argv)
+int main_test(int argc, char **argv)
 {
 	const char *filename, *codec_name;
 	const AVCodec *codec;
