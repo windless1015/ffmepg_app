@@ -26,7 +26,7 @@ SET(AVCODEC_LIBRARY ${FFMPEG_LIB_DIRS}/lib/avcodec.lib)
 SET(AVFORMAT_LIBRARY ${FFMPEG_LIB_DIRS}/lib/avformat.lib)
 SET(AVUTIL_LIBRARY  ${FFMPEG_LIB_DIRS}/lib/avutil.lib)
 SET(AVDEVICE_LIBRARY  ${FFMPEG_LIB_DIRS}/lib/avdevice.lib)
-
+SET(SWSCALE_LIBRARY  ${FFMPEG_LIB_DIRS}/lib/swscale.lib)
 
 #opencv
 SET(OPENCV_DIR 
@@ -42,7 +42,6 @@ SET(HIGHGUI_LIBRARY  ${OPENCV_LIB_DIR}/opencv_highgui420d.lib)
 #group source files, header files, resource files and ui files
 SET(FFMPEGAPP_SRCS
 	main.cpp
-	src/encode_video.c
 )
 
 SET(FFMPEGAPP_HDRS
@@ -72,6 +71,7 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
 	${AVFORMAT_LIBRARY} 
 	${AVUTIL_LIBRARY} 
 	${AVDEVICE_LIBRARY}
+	${SWSCALE_LIBRARY}
 	Qt5::Core
 	Qt5::Gui
 	#${HIGHGUI_LIBRARY}
